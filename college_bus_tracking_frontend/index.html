@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>College Bus Tracking System</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--navy:#10152f;--purple:#5145cd;--bg:#f4f5fc;--ink:#182044;--muted:#737b98;--line:#e7e9f3;--green:#159957;--orange:#e78b20}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select{font:inherit}button{cursor:pointer;border:0}
+.hidden{display:none!important}
+#loginScreen{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;background:#fff}
+.login-visual{background:linear-gradient(140deg,rgba(12,17,48,.9),rgba(46,40,125,.78)),url('https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=1400&q=80') center/cover;color:#fff;display:flex;flex-direction:column;justify-content:center;padding:9%}
+.login-visual h1{font-size:clamp(2rem,4vw,3.7rem);margin:15px 0}.login-visual p{font-size:1.1rem;line-height:1.6;color:#e3e5ff}
+.bus-icon{font-size:3rem}.login-panel{display:flex;align-items:center;justify-content:center;padding:28px}
+.login-card{width:min(420px,100%)}.login-card h2{font-size:2rem;margin-bottom:6px}.sub{color:var(--muted);margin-top:0;margin-bottom:28px}
+.field{margin:15px 0}.field label{display:block;font-size:.9rem;font-weight:700;margin-bottom:8px}.field input,.field select{width:100%;padding:14px;border:1px solid #dfe2ef;border-radius:10px;background:#fff;outline:none}.field input:focus,.field select:focus{border-color:var(--purple)}
+.primary{background:var(--purple);color:#fff;padding:13px 18px;border-radius:10px;font-weight:700}.primary:hover{filter:brightness(1.08)}.full{width:100%}.demo{font-size:.82rem;color:var(--muted);line-height:1.5;margin-top:18px}
+#app{min-height:100vh;display:grid;grid-template-columns:245px 1fr}.sidebar{background:var(--navy);color:#fff;padding:22px 15px;display:flex;flex-direction:column;gap:25px}.brand{display:flex;align-items:center;gap:11px;padding:5px 8px;font-weight:700;font-size:1.1rem}.brand span{font-size:1.8rem}.nav{display:grid;gap:7px}.nav button{color:#d5d8ed;background:transparent;text-align:left;padding:13px;border-radius:9px}.nav button.active,.nav button:hover{background:var(--purple);color:#fff}.sidebar-bottom{margin-top:auto;color:#aeb4d0;font-size:.82rem;padding:8px}
+main{min-width:0;padding:26px 30px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:24px}.topbar h2{margin:0;font-size:1.6rem}.topbar p{color:var(--muted);margin:6px 0 0}.user-chip{background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:30px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}.stat,.panel,.route-card,.notice{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(25,32,75,.04)}.stat{display:flex;align-items:center;gap:13px}.stat-icon{font-size:1.6rem;background:#efefff;border-radius:12px;padding:12px}.stat small{display:block;color:var(--muted);margin-bottom:6px}.stat strong{font-size:1.5rem}
+.grid-two{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}.panel h3{margin:0 0 15px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.panel-head h3{margin:0}
+#map{height:390px;border-radius:12px;z-index:1}.map-placeholder{height:390px;border-radius:12px;background:linear-gradient(135deg,#e7f0e8,#e6e9fb);display:grid;place-items:center;color:#53627a;text-align:center;padding:20px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:13px 9px;border-bottom:1px solid var(--line);font-size:.9rem}th{color:var(--muted);font-weight:600}.status{display:inline-block;padding:6px 10px;border-radius:20px;background:#e4f7ed;color:#14834d;font-size:.78rem;font-weight:700}.status.delayed{background:#fff0dc;color:#b96b0c}.status.stopped{background:#eeeef4;color:#626982}
+.route-list{display:grid;gap:12px}.route-card{display:flex;align-items:center;gap:14px}.bus-thumb{font-size:2rem;background:#fff5d9;padding:12px;border-radius:12px}.route-card .grow{flex:1}.route-card h4{margin:0 0 5px}.route-card p{margin:0;color:var(--muted);font-size:.87rem}.muted{color:var(--muted)}
+.notice{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}.notice .nicon{font-size:1.3rem}.notice p{margin:0;line-height:1.45}.notice small{display:block;color:var(--muted);margin-top:5px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}.secondary{background:#eef0ff;color:#3e36a6;padding:12px 16px;border-radius:9px;font-weight:700}.danger{background:#fff0f0;color:#b63b3b;padding:12px 16px;border-radius:9px;font-weight:700}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.empty{padding:35px;text-align:center;color:var(--muted)}
+footer{color:var(--muted);font-size:.78rem;margin-top:24px}
+@media(max-width:900px){#app{grid-template-columns:1fr}.sidebar{padding:12px;gap:10px}.brand{padding:4px}.nav{display:flex;overflow-x:auto}.nav button{white-space:nowrap;padding:10px}.sidebar-bottom{display:none}main{padding:20px}.stats{grid-template-columns:repeat(2,1fr)}.grid-two{grid-template-columns:1fr}}
+@media(max-width:560px){#loginScreen{grid-template-columns:1fr}.login-visual{min-height:220px;padding:25px}.login-visual h1{font-size:2rem}.login-panel{padding:28px 20px}main{padding:16px}.stats{gap:9px}.stat{padding:12px;gap:8px}.stat-icon{padding:8px}.stat strong{font-size:1.2rem}.form-grid{grid-template-columns:1fr}.topbar h2{font-size:1.25rem}}
+</style>
+</head>
+<body>
+<section id="loginScreen">
+  <div class="login-visual">
+    <div class="bus-icon">🚌</div>
+    <h1>College Bus<br>Tracking</h1>
+    <p>Track your college bus in real time.<br>Plan your journey. Reach on time.</p>
+  </div>
+  <div class="login-panel">
+    <form class="login-card" id="loginForm">
+      <h2>Welcome Back!</h2><p class="sub">Login to continue to your account</p>
+      <div class="field"><label for="role">Login as</label><select id="role"><option>Student</option><option>Driver</option><option>Admin</option></select></div>
+      <div class="field"><label for="userId">User ID</label><input id="userId" placeholder="Enter your ID" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" type="password" placeholder="Enter password" required></div>
+      <button class="primary full" type="submit">Login</button>
+      <p class="demo"><b>Demo:</b> Enter any ID and password to explore the frontend. This sample login does not verify real accounts.</p>
+    </form>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <div class="brand"><span>🚌</span><div>College Bus<br>Tracking</div></div>
+    <nav class="nav" id="navigation">
+      <button data-page="dashboard" class="active">▦ &nbsp; Dashboard</button>
+      <button data-page="tracking">📍 &nbsp; Live Tracking</button>
+      <button data-page="routes">⌁ &nbsp; Bus Routes</button>
+      <button data-page="details">🗺 &nbsp; Route Details</button>
+      <button data-page="notifications">♢ &nbsp; Notifications</button>
+      <button data-page="profile">👤 &nbsp; Profile</button>
+    </nav>
+    <div class="sidebar-bottom"><button id="logout" class="secondary full">↪ Logout</button></div>
+  </aside>
+  <main>
+    <div class="topbar"><div><h2 id="pageTitle">Dashboard</h2><p id="welcome">Track your college bus in real time</p></div><div class="user-chip" id="userChip">Student</div></div>
+    <section id="pageContent"></section>
+    <footer>College Bus Tracking System · Frontend demo</footer>
+  </main>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let currentRole='Student', currentUser='Student', tripActive=false, map=null, marker=null, routeLine=null;
+const buses=[
+ {id:'BUS 01',route:'Main Gate → College',driver:'Ravi Kumar',status:'On Route',eta:'3 min',lat:12.9716,lng:77.5946},
+ {id:'BUS 02',route:'Hostel → College',driver:'Suresh',status:'On Route',eta:'8 min',lat:12.975,lng:77.600},
+ {id:'BUS 03',route:'City Centre → College',driver:'Manoj',status:'Delayed',eta:'12 min',lat:12.968,lng:77.589},
+ {id:'BUS 04',route:'Ring Road → College',driver:'Arun',status:'On Route',eta:'6 min',lat:12.980,lng:77.590},
+ {id:'BUS 05',route:'Railway Station → College',driver:'Kiran',status:'Stopped',eta:'--',lat:12.965,lng:77.603}
+];
+const pages={dashboard:'Dashboard',tracking:'Live Bus Tracking',routes:'Bus Routes',details:'Route Details',notifications:'Notifications',profile:'My Profile'};
+function login(e){e.preventDefault();currentRole=$('role').value;currentUser=$('userId').value.trim();$('loginScreen').classList.add('hidden');$('app').classList.remove('hidden');$('userChip').textContent=currentRole+' · '+currentUser;$('welcome').textContent='Hello, '+currentUser+'! Track your college bus in real time';render('dashboard')}
+$('loginForm').addEventListener('submit',login);
+$('logout').addEventListener('click',()=>{if(map){map.remove();map=null} $('app').classList.add('hidden');$('loginScreen').classList.remove('hidden');$('password').value=''});
+$('navigation').addEventListener('click',e=>{const b=e.target.closest('button[data-page]');if(!b)return;render(b.dataset.page)});
+function render(page){
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+ $('pageTitle').textContent=pages[page]; if(map){map.remove();map=null}
+ const c=$('pageContent');
+ if(page==='dashboard') c.innerHTML=dashboardHTML();
+ if(page==='tracking') c.innerHTML=trackingHTML();
+ if(page==='routes') c.innerHTML=routesHTML();
+ if(page==='details') c.innerHTML=detailsHTML();
+ if(page==='notifications') c.innerHTML=notificationsHTML();
+ if(page==='profile') c.innerHTML=profileHTML();
+ if(page==='tracking'||page==='dashboard') initMap(page==='dashboard'?'dashboardMap':'liveMap');
+ if(page==='routes') attachRouteActions();
+ if(page==='details') attachTripActions();
+ if(page==='profile') attachProfileActions();
+}
+function dashboardHTML(){return `
+<div class="stats">
+ <div class="stat"><div class="stat-icon">🚌</div><div><small>Active Buses</small><strong>5</strong></div></div>
+ <div class="stat"><div class="stat-icon">📍</div><div><small>On Route</small><strong>4</strong></div></div>
+ <div class="stat"><div class="stat-icon">✅</div><div><small>Arrived</small><strong>0</strong></div></div>
+ <div class="stat"><div class="stat-icon">◷</div><div><small>Average Delay</small><strong>2 min</strong></div></div>
+</div>
+<div class="grid-two"><div class="panel"><div class="panel-head"><h3>Live Bus Location</h3><button class="secondary" onclick="render('tracking')">View map</button></div><div id="dashboardMap" style="height:330px;border-radius:12px"></div></div>
+<div class="panel"><h3>Bus Status</h3>${busRows()}<div class="actions"><button class="secondary" onclick="render('routes')">View all routes</button></div></div></div>`}
+function trackingHTML(){return `<div class="panel"><div class="panel-head"><h3>Live Tracking Map</h3><select id="busSelect" onchange="focusBus(this.value)" style="padding:10px;border:1px solid var(--line);border-radius:8px"><option value="0">Bus 01</option><option value="1">Bus 02</option><option value="2">Bus 03</option><option value="3">Bus 04</option><option value="4">Bus 05</option></select></div><div id="liveMap" style="height:480px;border-radius:12px"></div><p class="muted">Sample map markers are demonstration locations, not live GPS data.</p></div>`}
+function busRows(){return `<table><thead><tr><th>Bus</th><th>Route</th><th>Status</th></tr></thead><tbody>${buses.slice(0,4).map(b=>`<tr><td><b>${b.id}</b></td><td>${b.route}</td><td><span class="status ${b.status==='Delayed'?'delayed':b.status==='Stopped'?'stopped':''}">${b.status}</span></td></tr>`).join('')}</tbody></table>`}
+function routesHTML(){return `<div class="panel"><div class="panel-head"><h3>Available Bus Routes</h3><span class="muted">5 buses</span></div><div class="route-list">${buses.map((b,i)=>`<div class="route-card"><div class="bus-thumb">🚌</div><div class="grow"><h4>${b.id}</h4><p>${b.route} · Driver: ${b.driver}</p></div><span class="status ${b.status==='Delayed'?'delayed':b.status==='Stopped'?'stopped':''}">${b.status}</span><button class="secondary" data-route="${i}">Track</button></div>`).join('')}</div></div>`}
+function detailsHTML(){const b=buses[0];return `<div class="grid-two"><div class="panel"><h3>Route Details – ${b.id}</h3><p><b>From:</b> Main Gate</p><p><b>To:</b> College Campus</p><p><b>Driver:</b> ${b.driver}</p><p><b>Current location:</b> Near Central Signal</p><p><b>Route status:</b> <span class="status">On Route</span></p></div><div class="panel"><h3>Estimated Arrival</h3><div style="font-size:3rem;font-weight:700;margin:20px 0">◷ 3 min</div><p class="muted">Estimated time to college stop (demo value)</p><button class="primary" onclick="render('tracking')">View on Map</button></div></div>
+${currentRole==='Driver'?`<div class="panel" style="margin-top:18px"><h3>Driver Trip Controls</h3><p class="muted">Start or stop your assigned bus trip.</p><div class="actions"><button id="startTrip" class="primary">▶ Start Trip</button><button id="stopTrip" class="danger">■ Stop Trip</button><span id="tripStatus" class="status ${tripActive?'':'stopped'}">${tripActive?'Trip Active':'Trip Not Started'}</span></div></div>`:''}`}
+function notificationsHTML(){return `<div class="panel"><h3>Recent Notifications</h3>
+<div class="notice"><span class="nicon">🔵</span><div><p><b>Bus 02</b> has reached the hostel stop.</p><small>12:32 PM</small></div></div>
+<div class="notice"><span class="nicon">⚠️</span><div><p><b>Bus 03</b> is running 5 minutes late.</p><small>12:28 PM</small></div></div>
+<div class="notice"><span class="nicon">🔵</span><div><p><b>Bus 01</b> is on its way to college.</p><small>12:20 PM</small></div></div>
+<div class="notice"><span class="nicon">✅</span><div><p>All other buses are operating normally.</p><small>11:50 AM</small></div></div></div>`}
+function profileHTML(){return `<div class="panel"><h3>Account Profile</h3><div class="form-grid"><div class="field"><label>Name / User ID</label><input value="${currentUser}" readonly></div><div class="field"><label>Role</label><input value="${currentRole}" readonly></div><div class="field"><label>College</label><input value="Your College Name" readonly></div><div class="field"><label>Assigned Bus</label><input value="${currentRole==='Driver'?'BUS 01':'Not assigned'}" readonly></div></div>${currentRole==='Admin'?'<p class="muted">Admin can manage bus and route information after backend integration.</p>':''}</div>`}
+function attachRouteActions(){document.querySelectorAll('[data-route]').forEach(btn=>btn.addEventListener('click',()=>{render('tracking');setTimeout(()=>{if($('busSelect')){$('busSelect').value=btn.dataset.route;focusBus(btn.dataset.route)}},100)}))}
+function attachTripActions(){const s=$('startTrip'),t=$('stopTrip');if(s)s.onclick=()=>{tripActive=true;render('details')};if(t)t.onclick=()=>{tripActive=false;render('details')}}
+function attachProfileActions(){}
+function initMap(id){const el=$(id);if(!el)return;if(!window.L){el.innerHTML='<div class="map-placeholder">Map library could not load.<br>Connect to the internet and refresh.</div>';return}
+ map=L.map(id).setView([12.9716,77.5946],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+ buses.forEach((b,i)=>{const m=L.marker([b.lat,b.lng]).addTo(map).bindPopup(`<b>${b.id}</b><br>${b.route}<br>${b.status}`);if(i===0)marker=m});
+ const campus=[12.9716,77.5946];L.marker(campus).addTo(map).bindPopup('College Campus');routeLine=L.polyline([[12.965,77.585],[12.968,77.590],[12.9716,77.5946]],{color:'#5145cd',weight:5}).addTo(map);setTimeout(()=>map.invalidateSize(),100)
+}
+function focusBus(index){if(!map)return;const b=buses[Number(index)];if(b)map.setView([b.lat,b.lng],15)}
+</script>
+</body>
+</html>
